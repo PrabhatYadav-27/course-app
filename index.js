@@ -32,7 +32,7 @@ app.post("/course/purchase", function(req,res){
 });
 
 //endpoint for all the courses on the app
-app.get("/courses", function(req,res){
+app.get("/course/preview", function(req,res){
 
 
 });
