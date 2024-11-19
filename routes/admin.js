@@ -14,6 +14,8 @@ const adminRouter = Router();
 //signup endpoint for admin
 adminRouter.post("/signup",  async function(req,res){
     const { email, password, firstName, lastName } = req.body;
+    
+
 
     await adminModel.create({
         email:email,
@@ -28,44 +30,53 @@ adminRouter.post("/signup",  async function(req,res){
 
 //signin endpoint for admin
 
-adminRouter.post("/signin", async function(req,res){
-
+adminRouter.post("/signin", async function (req, res) {
     const { email, password } = req.body;
 
-    const admin =  await adminModel.findOne({
-        email: email,
-        password: password
-
+    // Find admin user
+    const admin = await adminModel.findOne({
+        email,
+        password,
     });
-    if(admin){
-        const token=jwt.sign({
-            id: admin._id
-        }, JWT_ADMIN_PASSWORD);
 
+    if (admin) {
+        // Ensure JWT_ADMIN_PASSWORD is defined
+        if (!JWT_ADMIN_PASSWORD) {
+            return res.status(500).json({ message: "JWT secret is not defined" });
+        }
 
-        // do cookies logic or session based
+        // Sign token with JWT_ADMIN_PASSWORD
+        const token = jwt.sign(
+            {
+                id: admin._id,
+            },
+            JWT_ADMIN_PASSWORD, // Secret key from .env
+            { expiresIn: '1h' } // Optional: set token expiration
+        );
+
         res.json({
-            token:token
-        })
-    }else{
+            token,
+        });
+    } else {
         res.status(403).json({
-            message: "Invalid credential"
-        })
-
+            message: "Invalid credentials",
+        });
     }
 });
+
 
 //course endpoint for admin
 
 adminRouter.post("/course",adminMiddleware , async function(req,res){
     const adminId = req.userId;
-    const {title, description, imageUrl, price} = req.body;
+
+    const {title, description, imageUrl, price, } = req.body;
 
     const course = await courseModel.create({
-        title,
-        description,
-        imageUrl,
-        price,
+        title:title,
+        description:description,
+        imageUrl:imageUrl,
+        price:price,
         creatorId: adminId
     })
     res.json({
@@ -76,18 +87,40 @@ adminRouter.post("/course",adminMiddleware , async function(req,res){
 
 //change course endpoint for adminCourse
 
-adminRouter.put("/course", function(req,res){
+adminRouter.put("/course", adminMiddleware,async function(req,res){
+    const adminId = req.userId;
+    const {title, description, imageUrl, price,courseId} = req.body;
+
+    const course = await courseModel.updateOne(
+        {
+            _id:courseId,
+            creatorId: adminId
+        },{
+        title,
+        description,
+        imageUrl,
+        price
+    })
     res.json({
-        message: "admin put  course endpoint"
+        message: "Course updated",
+        courseId : course._id 
     })
 });
 
 //view all course endpoint for admin
 
 
-adminRouter.get("/course/all-course", function(req,res){
+adminRouter.get("/course/all-course",adminMiddleware , async function(req,res){
+    const adminId = req.userId;
+    const courses = await courseModel.find(
+        {
+        
+            creatorId: adminId
+        });
+
     res.json({
-        message: "admin all course endpoint"
+        message: "Course created",
+        courses 
     })
 });
 
